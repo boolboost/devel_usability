@@ -1,0 +1,10 @@
+name = Devel usability
+description = Settings devel.
+configure = admin/config/development/devel_usability/settings
+package = Custom
+core = 7.x
+version = 7.x-1.x
+interface translation project = FALSE
+
+;files[] =
+;dependencies[] = 

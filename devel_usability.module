@@ -1,0 +1,255 @@
+<?php
+/**
+ * @file
+ * Settings devel
+ */
+
+// Contextual links and Overlay
+
+/**
+ * Implements hook_contextual_links_view_alter().
+ */
+function devel_usability_contextual_links_view_alter(&$element, $items) {
+  global $user;
+
+  // contextual_links and overlay.
+  // - remove destination
+  // - add target blank
+  $enable = TRUE;
+  if (module_exists('overlay')) {
+    $use_overlay = !isset($user->data['overlay']) || $user->data['overlay'];
+    $enable = !(user_access('access overlay') && $use_overlay);
+  }
+
+  if ($enable) {
+    foreach ($element['#links'] as &$link) {
+      if (isset($link['query']['destination'])) {
+        unset($link['query']['destination']);
+      }
+
+      $link['attributes']['target'] = '_blank';
+    }
+  }
+}
+
+// Robots Txt
+
+/**
+ * Implements hook_robotstxt().
+ */
+function devel_usability_robotstxt() {
+  // no-index for devel domain
+  $devel_domain = variable_get('devel_usability_domain', '');
+
+  if ($devel_domain) {
+    $pattern = '/' . preg_quote($devel_domain, '/') . '$/';
+
+    if (preg_match($pattern, $_SERVER['HTTP_HOST'])) {
+      return array('Disallow: /');
+    }
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function devel_usability_menu() {
+  // Settings page.
+  $items['admin/config/development/devel_usability/settings'] = array(
+    'title' => 'Devel Usability',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('devel_usability_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'devel_usability.admin.inc',
+    'file path' => drupal_get_path('module', 'devel_usability'),
+  );
+
+  return $items;
+}
+
+// Form
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @form_id
+ * node_type_form
+ */
+function devel_usability_form_node_type_form_alter(&$form, &$form_state, $form_id) {
+  // add node type
+  if (isset($form['#node_type']->is_new) && $form['#node_type']->is_new) {
+    $form['submission']['node_preview']['#default_value'] = variable_get('devel_usability:node_type_form:node_preview', 0);
+    $form['submission']['title_label']['#default_value'] = variable_get('devel_usability:node_type_form:title_label', 'Название');
+    $form['workflow']['node_options']['#default_value'] = explode(',', variable_get('devel_usability:node_type_form:node_options', 'status'));
+    $form['display']['node_submitted']['#default_value'] = variable_get('devel_usability:node_type_form:node_submitted', FALSE);
+    $form['comment']['comment']['#default_value'] = variable_get('devel_usability:node_type_form:comment', 0);
+    $form['#submit'][] = '_devel_usability_form_node_type_form__submit';
+  }
+}
+
+/**
+ * Submit
+ *
+ * @form_id
+ * node_type_form
+ */
+function _devel_usability_form_node_type_form__submit($form, &$form_state) {
+  $values = &$form_state['values'];
+  // new node last settings
+  variable_set('devel_usability:node_type_form:node_preview', $values['node_preview']);
+  variable_set('devel_usability:node_type_form:title_label', $values['title_label']);
+  variable_set('devel_usability:node_type_form:node_options', join(',', $values['node_options']));
+  variable_set('devel_usability:node_type_form:node_submitted', $values['node_submitted']);
+  variable_set('devel_usability:node_type_form:comment', $values['comment']);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @form_id
+ * field_ui_field_overview_form
+ */
+function devel_usability_form_field_ui_field_overview_form_alter(&$form, &$form_state, $form_id) {
+  // fields grouping
+  if (isset($form['fields']['_add_existing_field']['field_name']['#options'])) {
+    $options = &$form['fields']['_add_existing_field']['field_name']['#options'];
+
+    foreach ($options as $key => &$option) {
+      if (is_string($option)) {
+        list($group, $label) = explode(': ', $option, 2);
+        $options[$group][$key] = $label;
+        unset($options[$key]);
+      }
+    }
+  }
+
+  _devel_usability_form_field_ui_all_overview_form_alter($form, $form_state, $form_id);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @form_id
+ * field_ui_display_overview_form
+ */
+function devel_usability_form_field_ui_display_overview_form_alter(&$form, &$form_state, $form_id) {
+  // machine name in field display
+  if (isset($form['fields'])) {
+    foreach ($form['fields'] as $type => &$field) {
+      if (isset($field['#row_type']) && $field['#row_type'] == 'field') {
+        $type_prefix = '';
+        if (!isset($field['format']['type']['#parents'])) {
+          $type_prefix = 'DS: ';
+        }
+
+        $field['human_name']['#prefix'] = '<div class="label-input" style="overflow: hidden;">';
+        $field['human_name']['#suffix'] = '<div class="description">' . $type_prefix . $type . '</div></div>';
+      }
+    }
+  }
+
+  _devel_usability_form_field_ui_all_overview_form_alter($form, $form_state, $form_id);
+}
+
+/**
+ * Add form alter
+ *
+ * @form_id
+ * field_ui_field_overview_form
+ * field_ui_display_overview_form
+ */
+function _devel_usability_form_field_ui_all_overview_form_alter(&$form, &$form_state, $form_id) {
+  // field group last type
+  if (isset($form['fields']['_add_new_group']['format']['type']['#default_value'])) {
+    $form['fields']['_add_new_group']['format']['type']['#default_value'] = variable_get("devel_usability:{$form_id}:type", 'html-element');
+  }
+
+  $form['#submit'][] = '_devel_usability_form_field_ui_all_overview_form__submit';
+}
+
+/**
+ * Submit
+ *
+ * @form_id
+ * field_ui_field_overview_form
+ * field_ui_display_overview_form
+ */
+function _devel_usability_form_field_ui_all_overview_form__submit($form, &$form_state) {
+  $values = &$form_state['values'];
+
+  // field group last type
+  if (isset($values['fields']['_add_new_group']['format']['type'])) {
+    variable_set("devel_usability:{$form['#form_id']}:type", $values['fields']['_add_new_group']['format']['type']);
+  }
+}
+
+// Display Suite
+
+/**
+ * Implements hook_ds_layout_info_alter().
+ */
+function devel_usability_ds_layout_info_alter(&$layouts) {
+  // remove default ds layouts
+  foreach ($layouts as $key => &$layout) {
+    if (preg_match('/^ds_/', $key)) {
+      unset($layouts[$key]);
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_settings_form_alter().
+ */
+function devel_usability_field_formatter_settings_form_alter(&$element, &$form_state, $context) {
+  // default class for ds extras theme expert
+  if (isset($element['ft']['func']['#options'])) {
+    $class_name = '';
+    if (isset($form_state['field']['field_name'])) {
+      $class_name = preg_replace('/^field_/', '', $form_state['field']['field_name']);
+    }
+    else {
+      $class_name = $form_state['field']['name'];
+    }
+    $class_name = preg_replace('/_+/', '-', $class_name);
+    if ($class_name == 'body') {
+      $class_name = 'description';
+    }
+    if ($element['ft']['ow']['#default_value'] == FALSE && $element['ft']['ow-cl']['#default_value'] == '') {
+      $element['ft']['ow-cl']['#default_value'] = 'wrapper-' . $class_name;
+    }
+    if ($element['ft']['fi']['#default_value'] == FALSE && $element['ft']['fi-cl']['#default_value'] == '') {
+      $element['ft']['fi-cl']['#default_value'] = $class_name;
+    }
+  }
+}
+
+// Field Group
+
+/**
+ * Implements hook_field_group_info_alter().
+ */
+function devel_usability_field_group_info_alter(&$groups) {
+  /// remove base class
+  foreach ($groups as $type => &$bundles) {
+    foreach ($bundles as $bundle => &$views) {
+      if (is_array($views)) {
+        foreach ($views as $view => &$group_items) {
+          if (is_array($group_items)) {
+            foreach ($group_items as $group_name => &$group) {
+              if (is_object($group)) {
+                $class_names = &$group->format_settings['instance_settings']['classes'];
+                $class_names = explode(' ', $class_names);
+                $class_key = array_search('field-group-' . $group->format_type, $class_names);
+
+                if ($class_key !== FALSE) {
+                  unset($class_names[$class_key]);
+                }
+                $class_names = join(' ', $class_names);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

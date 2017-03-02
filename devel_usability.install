@@ -1,0 +1,29 @@
+<?php
+/**
+ * @file
+ * Install and uninstall processes.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function devel_usability_install() {
+  // Set weight to 2.
+  db_update('system')
+    ->fields(array('weight' => 2))
+    ->condition('name', 'devel_usability')
+    ->execute();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function devel_usability_uninstall() {
+  variable_del('devel_usability:node_type_form:comment');
+  variable_del('devel_usability:node_type_form:title_label');
+  variable_del('devel_usability:node_type_form:node_preview');
+  variable_del('devel_usability:node_type_form:node_options');
+  variable_del('devel_usability:node_type_form:node_submitted');
+  variable_del('devel_usability:field_ui_field_overview_form:type');
+  variable_del('devel_usability:field_ui_display_overview_form:type');
+}
