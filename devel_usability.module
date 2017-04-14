@@ -215,7 +215,6 @@ function devel_usability_ds_layout_info_alter(&$layouts) {
 function devel_usability_field_formatter_settings_form_alter(&$element, &$form_state, $context) {
   // default class for ds extras theme expert
   if (isset($element['ft']['func']['#options'])) {
-    $class_name = '';
     if (isset($form_state['field']['field_name'])) {
       $class_name = preg_replace('/^field_/', '', $form_state['field']['field_name']);
     }

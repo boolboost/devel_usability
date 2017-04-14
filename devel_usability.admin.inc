@@ -13,21 +13,25 @@ function devel_usability_settings() {
     '#type' => 'vertical_tabs',
   );
 
-  $form['root']['robotstxt'] = array(
-    '#type' => 'fieldset',
-    '#title' => 'RobotsTxt',
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-  );
+  if (module_exists('robotstxt')) {
+    $form['root']['robotstxt'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'RobotsTxt',
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
 
-  $form['root']['robotstxt']['devel_usability_domain'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Devel domain'),
-    '#default_value' => variable_get('devel_usability_domain', ''),
-    '#size' => 60,
-    '#maxlength' => 128,
-    '#required' => TRUE,
-  );
+    $form['root']['robotstxt']['devel_usability_domain'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Devel domain'),
+      '#default_value' => variable_get('devel_usability_domain', ''),
+      '#size' => 60,
+      '#maxlength' => 128,
+      '#required' => TRUE,
+    );
+  } else {
+    drupal_set_message('Module "robotstxt" is disabled', 'error');
+  }
 
   return system_settings_form($form);
 }
