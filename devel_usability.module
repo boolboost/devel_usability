@@ -4,6 +4,18 @@
  * Settings devel
  */
 
+// Redirect node to <front>
+
+/**
+ * Implements hook_page_alter().
+ */
+function devel_usability_page_alter(&$page) {
+  if (request_path() == variable_get('site_frontpage', 'node')) {
+    drupal_goto('<front>');
+  }
+}
+
+
 // Contextual links and Overlay
 
 /**
