@@ -4,6 +4,19 @@
  * Settings devel
  */
 
+//
+/**
+ * Implements hook_imagemagick_arguments_alter().
+ */
+function devel_usability_imagemagick_arguments_alter(&$args, $context = array()) {
+  // https://developers.google.com/speed/docs/insights/OptimizeImages
+  $args['google_advice'] = '-sampling-factor 4:2:0';
+  // Progression JPEG and interlaced PNG's support.
+  $args['progression'] = '-interlace Plane';
+  // Clean image for all unused data. EXIF etcetera.
+  $args['strip'] = '-strip';
+}
+
 // Redirect node to <front>
 
 /**
