@@ -160,15 +160,15 @@ function devel_usability_form_field_ui_field_overview_form_alter(&$form, &$form_
 function devel_usability_form_field_ui_display_overview_form_alter(&$form, &$form_state, $form_id) {
   // machine name in field display
   if (isset($form['fields'])) {
-    foreach ($form['fields'] as $type => &$field) {
+    foreach ($form['fields'] as $field_name => &$field) {
       if (isset($field['#row_type']) && $field['#row_type'] == 'field') {
-        $type_prefix = '';
+        $description = $field_name;
         if (!isset($field['format']['type']['#parents'])) {
-          $type_prefix = 'DS: ';
+          $description = "DS: {$field_name}";
         }
 
         $field['human_name']['#prefix'] = '<div class="label-input" style="overflow: hidden;">';
-        $field['human_name']['#suffix'] = '<div class="description">' . $type_prefix . $type . '</div></div>';
+        $field['human_name']['#suffix'] = '<div class="description">' . $description . '</div></div>';
       }
     }
   }
@@ -234,12 +234,12 @@ function devel_usability_field_formatter_settings_form_alter(&$element, &$form_s
     else {
       $class_name = $form_state['field']['name'];
     }
-    $class_name = preg_replace('/_+/', '-', $class_name);
+    $class_name = drupal_html_class($class_name);
     if ($class_name == 'body') {
       $class_name = 'description';
     }
     if ($element['ft']['ow']['#default_value'] == FALSE && $element['ft']['ow-cl']['#default_value'] == '') {
-      $element['ft']['ow-cl']['#default_value'] = 'wrapper-' . $class_name;
+      $element['ft']['ow-cl']['#default_value'] = "wrapper-{$class_name}";
     }
     if ($element['ft']['fi']['#default_value'] == FALSE && $element['ft']['fi-cl']['#default_value'] == '') {
       $element['ft']['fi-cl']['#default_value'] = $class_name;
@@ -263,7 +263,7 @@ function devel_usability_field_group_info_alter(&$groups) {
               if (is_object($group)) {
                 $class_names = &$group->format_settings['instance_settings']['classes'];
                 $class_names = explode(' ', $class_names);
-                $class_key = array_search('field-group-' . $group->format_type, $class_names);
+                $class_key = array_search("field-group-{$group->format_type}", $class_names);
 
                 if ($class_key !== FALSE) {
                   unset($class_names[$class_key]);
@@ -274,6 +274,40 @@ function devel_usability_field_group_info_alter(&$groups) {
           }
         }
       }
+    }
+  }
+}
+
+// Facet API
+
+/**
+ * Fix face link "taxonomy/term/%25"
+ */
+ 
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * @hook
+ * facetapi_link_inactive
+ */
+function devel_usability_preprocess_facetapi_link_inactive(&$variables) {
+  if (isset($variables['path'])) {
+    if ($variables['path'] == 'taxonomy/term/%') {
+      $variables['path'] = current_path();
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * @hook
+ * facetapi_link_active
+ */
+function devel_usability_preprocess_facetapi_link_active(&$variables) {
+  if (isset($variables['path'])) {
+    if ($variables['path'] == 'taxonomy/term/%') {
+      $variables['path'] = current_path();
     }
   }
 }
