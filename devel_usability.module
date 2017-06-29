@@ -23,8 +23,11 @@ function devel_usability_imagemagick_arguments_alter(&$args, $context = array())
  * Implements hook_page_alter().
  */
 function devel_usability_page_alter(&$page) {
+  $query = drupal_get_query_parameters();
+  $options = ['query' => $query];
+
   if (request_path() == variable_get('site_frontpage', 'node')) {
-    drupal_goto('<front>');
+    drupal_goto('<front>', $options);
   }
 }
 
